@@ -1,6 +1,10 @@
 = synonym-finder
 
-Description goes here.
+Synonym finder is a biodiversity tool for finding homotypic nomenclatural synonyms in taxonomic hierarchies.
+
+= Status
+
+Early development
 
 == Contributing to synonym-finder
  
