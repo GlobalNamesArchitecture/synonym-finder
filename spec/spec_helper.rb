@@ -1,6 +1,7 @@
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 $LOAD_PATH.unshift(File.dirname(__FILE__))
 require 'rspec'
+require 'ostruct'
 require 'synonym-finder'
 
 # Requires supporting files with custom matchers and macros, etc,
@@ -8,5 +9,11 @@ require 'synonym-finder'
 Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each {|f| require f}
 
 RSpec.configure do |config|
-  
+
+end
+
+class SynonymFinder::Spec
+  Config = OpenStruct.new(
+    :input => INPUT
+  )
 end
