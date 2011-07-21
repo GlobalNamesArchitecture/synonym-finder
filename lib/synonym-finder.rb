@@ -5,13 +5,21 @@ require 'taxamatch_rb'
 Dir["#{File.dirname(__FILE__)}/synonym-finder/**/*.rb"].each {|f| require f}
 
 class SynonymFinder
-  attr :input
+  attr :input, :db
   
   def initialize(input)
     @input = JSON.parse(input, :symbolize_names => true)
     @atomizer = Taxamatch::Atomizer.new
     @db = init_db
     build_tree
+    @duplicate_finder = DuplicateFinder.new(self)
+  end
+
+  def find_genera_moves
+  end
+
+  def species_epithet_duplicates
+    @duplicate_finder.species_epithet_duplicates
   end
   
   private
@@ -29,7 +37,7 @@ class SynonymFinder
       @db.execute("insert into names (id, name, authors, years) values (?, ?, ?, ?)", [row[:id], row[:name], Marshal.dump(atomized_name[:all_authors]), Marshal.dump(atomized_name[:all_years])])
       path = row[:path].split("|")
       path_part = path[0]
-      level = path.size
+      level = path.size - 1
       path[1..-1].each do |taxa|
         level -= 1
         path_part << "|"
@@ -61,8 +69,6 @@ class SynonymFinder
         @db.execute("insert into paths_names (path_id, name_id, level) values (?, ?, ?)", [path_id, name_id, level])
       end
     end
-    require 'ruby-debug'; debugger
-    puts ''
   end
 
   def init_db
