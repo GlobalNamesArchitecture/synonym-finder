@@ -15,7 +15,8 @@ class SynonymFinder
     @duplicate_finder = DuplicateFinder.new(self)
   end
 
-  def find_genera_moves
+  def canonical_duplicates
+    @duplicate_finder.canonical_duplicates
   end
 
   def species_epithet_duplicates
@@ -26,14 +27,13 @@ class SynonymFinder
   
   def build_tree
     tree = {}
-    species = {}
-    genera = {}
+    name_parts = {}
     @input.each do |row|
       atomized_name = @atomizer.parse row[:name]
       species_string = get_species(atomized_name)
-      genus = atomized_name[:genus][:string]
-      species[species_string.to_sym] ? species[species_string.to_sym] << row[:id] : species[species_string.to_sym] = [row[:id]]
-      genera[genus.to_sym] ? genera[genus.to_sym] << row[:id] : genera[genus.to_sym] = [row[:id]]
+      canonical_name = atomized_name[:genus][:string] + " " + species_string
+      sp_ary = [canonical_name, species_string]
+      name_parts[sp_ary] ? name_parts[sp_ary] << row[:id] : name_parts[sp_ary] = [row[:id]]
       @db.execute("insert into names (id, name, authors, years) values (?, ?, ?, ?)", [row[:id], row[:name], Marshal.dump(atomized_name[:all_authors]), Marshal.dump(atomized_name[:all_years])])
       path = row[:path].split("|")
       path_part = path[0]
@@ -46,18 +46,10 @@ class SynonymFinder
         tree[key] ? tree[key] << {id: row[:id], level: level} : tree[key] = [{id: row[:id], level: level}]
       end
     end
-    species.keys.each do |key|
-      @db.execute("insert into species_strings (species_string) values (?)", key.to_s)
-      species_string_id = @db.execute("select last_insert_rowid()")[0][0]
-      species[key].each do |name_id|
-        @db.execute("insert into species_strings_names (species_string_id, name_id) values (?, ?)", [species_string_id, name_id])
-      end
-    end
-    genera.keys.each do |key|
-      @db.execute("insert into genera (genus) values (?)", key.to_s)
-      genus_id = @db.execute("select last_insert_rowid()")[0][0]
-      genera[key].each do |name_id|
-        @db.execute("insert into genera_names (genus_id, name_id) values (?, ?)", [genus_id, name_id])
+    name_parts.keys.each do |key|
+      name_parts[key].each do |name_id|
+        vals = key + [name_id]
+        @db.execute("insert into name_parts (canonical, epithet, name_id) values (?, ?, ?)", vals)
       end
     end
     tree.keys.each do |key|
@@ -76,12 +68,8 @@ class SynonymFinder
     db.execute("create table names (id string primary key, name string, authors, years)")
 
     db.execute("create table paths (id integer primary key autoincrement, path)")
-    db.execute("create table species_strings (id integer primary key autoincrement, species_string string)")
-    db.execute("create table genera (id integer primary key autoincrement, genus string)")
-    
     db.execute("create table paths_names (path_id integer, name_id string, level integer)")
-    db.execute("create table species_strings_names (species_string_id integer, name_id string)")
-    db.execute("create table genera_names (genus_id integer, name_id string)")
+    db.execute("create table name_parts (canonical string, epithet string, name_id string)")
     db
   end
 

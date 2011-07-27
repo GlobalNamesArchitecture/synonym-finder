@@ -10,7 +10,8 @@ describe "SynonymFinder" do
     @sf.input[0].keys.should == [:id, :path, :name]
   end
 
-  it "should be able to find species epythet duplications" do
+  it "should be able to find species epithet duplications" do
+    se_dups = @sf.canonical_duplicates
     se_dups = @sf.species_epithet_duplicates
     require 'ruby-debug'; debugger
     puts ''
