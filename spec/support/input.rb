@@ -18,6 +18,7 @@ class SynonymFinder::Spec
     {id: 400, path: "Animalia|Athropoda|Insecta|Hymenoptera|Formicidae|Crematogaster",   name: "Crematogaster obscurata  Emery, 1895"},
     {id: 500, path: "Animalia|Athropoda|Insecta|Hymenoptera|Tiphiidae|Diamma",           name: "Diamma obscurata  (Emery, 1895)"}, #match 2 degrees 400 auth
     {id: 600, path: "Animalia|Athropoda|Insecta|Hymenoptera|Tiphiidae|Crematogaster",    name: "Crematogaster obscurata  Em. 1895"}, #full name match
+    {id: 700, path: "Animalia|Something1|Something2|Something3|Something4|Somename",    name: "Somename obscurata Emery"}, #distance over threshold
   ]
 
 end

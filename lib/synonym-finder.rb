@@ -19,8 +19,8 @@ class SynonymFinder
     @duplicate_finder.canonical_duplicates
   end
 
-  def species_epithet_duplicates
-    @duplicate_finder.species_epithet_duplicates
+  def species_epithet_duplicates(threshold)
+    @duplicate_finder.species_epithet_duplicates(threshold)
   end
   
   private

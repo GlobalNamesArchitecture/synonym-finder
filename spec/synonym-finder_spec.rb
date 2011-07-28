@@ -11,8 +11,8 @@ describe "SynonymFinder" do
   end
 
   it "should be able to find species epithet duplications" do
-    se_dups = @sf.canonical_duplicates
-    se_dups = @sf.species_epithet_duplicates
+    can_dups = @sf.canonical_duplicates
+    se_dups = @sf.species_epithet_duplicates(100)
     require 'ruby-debug'; debugger
     puts ''
   end
