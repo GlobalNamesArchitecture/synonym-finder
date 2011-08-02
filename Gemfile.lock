@@ -45,6 +45,7 @@ GEM
       columnize (>= 0.3.1)
       linecache19 (>= 0.5.11)
       ruby-debug-base19 (>= 0.11.19)
+    ruby-stemmer (0.9.1)
     ruby_core_source (0.1.5)
       archive-tar-minitar (>= 0.5.2)
     sqlite3 (1.3.3)
@@ -66,5 +67,6 @@ DEPENDENCIES
   rcov
   rspec (~> 2.3.0)
   ruby-debug19
+  ruby-stemmer
   sqlite3
   taxamatch_rb

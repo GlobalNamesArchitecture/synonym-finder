@@ -14,17 +14,35 @@ class SynonymFinder
         names = names.join(",")
         data = @db.execute("select pn1.name_id, pn2.name_id, pn1.level, pn2.level from paths_names pn1 join paths_names pn2 on pn1.path_id = pn2.path_id where pn1.name_id in (#{names}) and pn2.name_id in (#{names}) and pn1.name_id != pn2.name_id")
         organize_data(data, matches)
+        matches.each do |key, value|
+          if value[:total_distance] == 0
+            value[:type] = :chresonym
+          else
+            value[:type] = :alt_placement
+          end
+        end
       end
       matches
     end
 
-    def species_epithet_duplicates(threshold_distance = 5)
+    def species_epithet_duplicates(threshold_distance)
       matches = {}
-      @db.execute("select epithet from name_parts group by epithet having count(*) > 1").each do |epithet|
-        names = @db.execute("select name_id from name_parts where epithet = ?", epithet).map {|n| n[0]}.join(",")
-        require 'ruby-debug'; debugger
+      @db.execute("select epithet_stem from name_parts group by epithet_stem having count(*) > 1").each do |stem|
+        names = @db.execute("select name_id from name_parts where epithet_stem = ?", stem).map {|n| n[0]}.join(",")
         data = @db.execute("select pn1.name_id, pn2.name_id, pn1.level, pn2.level from paths_names pn1 join paths_names pn2 on pn1.path_id = pn2.path_id where pn1.name_id in (#{names}) and pn2.name_id in (#{names}) and pn1.name_id != pn2.name_id") # and (pn1.level + pn2.level) < ?", threshold_distance)
         organize_data(data, matches) 
+      end
+      matches.each do |key, value|
+        if value[:total_distance] == 0
+          epithets = @db.execute("select distinct epithet from name_parts where name_id in (#{key.join(",")})")
+          if epithets.size == 1
+            value[:type] = :chresonym
+          else
+            value[:type] = :lexical_variant
+          end
+        else
+          value[:type] = :homotypic
+        end
       end
       matches
     end

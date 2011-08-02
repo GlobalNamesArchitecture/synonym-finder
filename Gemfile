@@ -5,6 +5,7 @@ source "http://rubygems.org"
 gem 'sqlite3'
 gem 'taxamatch_rb'
 gem 'biodiversity19'
+gem 'ruby-stemmer'
 
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.
