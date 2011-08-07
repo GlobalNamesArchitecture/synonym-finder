@@ -9,8 +9,12 @@ class SynonymFinder
 
     # Finds duplication groups for a name. A name can be one or more duplication groups: chresonym, lexical variant, homotypic, alt placement
     def organize
+      SynonymFinder.logger_write(@synonym_finder.object_id, "Grouping results")
       @last_id = 1
+      count = 0
       @synonym_finder.matches.each do |key, value|
+        count += 1
+        SynonymFinder.logger_write(@synonym_finder.object_id, "Grouping match %s" % count) if count % 100 == 0
         gr1 = get_group(key[0], value[:type])
         gr2 = get_group(key[1], value[:type])
         if gr1 && gr2 
