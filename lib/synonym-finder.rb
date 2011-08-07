@@ -37,7 +37,7 @@ class SynonymFinder
     @tm = Taxamatch::Base.new
     @stemmer = Lingua::Stemmer.new(:language => "latin")
     @db = init_db(in_memory)
-    tmp_populate
+    # tmp_populate
     build_tree unless @db.execute("select count(*) from names")[0][0].to_i > 0
     @matches = {}
     @duplicate_finder = DuplicateFinder.new(self)
@@ -61,6 +61,7 @@ class SynonymFinder
       next if value[:type] != :chresonym && value[:auth_match] == 0
       res[key] = value
     end
+    res
   end
 
   def compare_authorship(matches)
@@ -124,8 +125,6 @@ class SynonymFinder
         @db.execute("insert into paths_names (path_id, name_id, level) values (?, ?, ?)", [path_id, name_id, level])
       end
     end
-    require 'ruby-debug'; debugger
-    puts ''
   end
 
   def init_db(in_memory)
