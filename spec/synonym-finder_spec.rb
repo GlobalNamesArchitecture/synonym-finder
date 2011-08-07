@@ -2,7 +2,9 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
 describe "SynonymFinder" do
   before(:all) do
-    @sf = SynonymFinder.new(SynonymFinder::Spec::Config.input)
+    # @sf = SynonymFinder.new(SynonymFinder::Spec::Config.input)
+    SynonymFinder.logger = Logger.new($stdout)
+    @sf = SynonymFinder.new(open(File.dirname(__FILE__) + "/support/union_data.txt").read)
   end
 
   it "should able to ingest input in correct format" do
@@ -15,4 +17,5 @@ describe "SynonymFinder" do
     require 'ruby-debug'; debugger
     puts ''
   end
+
 end

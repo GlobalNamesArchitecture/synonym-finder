@@ -1,3 +1,4 @@
+require 'logger'
 require 'json'
 require 'sqlite3'
 require 'taxamatch_rb'
@@ -6,21 +7,41 @@ require 'lingua/stemmer'
 Dir["#{File.dirname(__FILE__)}/synonym-finder/**/*.rb"].each {|f| require f}
 
 class SynonymFinder
-  NO_AUTH_INFO = 0.1
-  PARTIAL_AUTH_INFO = 0.2
-  AUTH_MATCH = 1.0
-  AUTH_NO_MATCH = 0.0
+  NO_AUTH_INFO = 10
+  PARTIAL_AUTH_INFO = 20
+  AUTH_MATCH = 100
+  AUTH_NO_MATCH = 0
 
-  attr :input, :db
+  attr :input, :db, :matches
   
-  def initialize(input)
+  def self.logger
+    @@logger ||= Logger.new(nil)
+  end
+
+  def self.logger=(logger)
+    @@logger = logger
+  end
+
+  def self.logger_reset
+    self.logger = Logger.new(nil)
+  end
+
+  def self.logger_write(obj_id, message, method = :info)
+    self.logger.send(method, "|%s|%s|" % [obj_id, message])
+  end
+
+  
+  def initialize(input, in_memory = true)
     @input = JSON.parse(input, :symbolize_names => true)
     @atomizer = Taxamatch::Atomizer.new
     @tm = Taxamatch::Base.new
     @stemmer = Lingua::Stemmer.new(:language => "latin")
-    @db = init_db
-    build_tree
+    @db = init_db(in_memory)
+    tmp_populate
+    build_tree unless @db.execute("select count(*) from names")[0][0].to_i > 0
+    @matches = {}
     @duplicate_finder = DuplicateFinder.new(self)
+    @group_organizer = GroupOrganizer.new(self)
   end
 
   def find_matches(threshold = 5)
@@ -28,8 +49,8 @@ class SynonymFinder
     epithet_matches = @duplicate_finder.species_epithet_duplicates(threshold)
     matches = epithet_matches.merge(canonical_matches)
     matches = compare_authorship(matches)
-    matches = clean_up(matches)
-    create_duplication_groups(matches)
+    @matches = clean_up(matches)
+    @group_organizer.organize
   end
 
   private
@@ -59,40 +80,15 @@ class SynonymFinder
     matches
   end
 
-  def create_duplication_groups(matches)
-    groups = {}
-    matches.each do |key, value|
-      last_id = @db.execute("select max(id) from groups")[0][0] + 1 rescue 1
-      if groups.has_key?(key[0]) && groups.has_key?(key[1])
-        if groups[key[0]] != groups[key[1]]
-          old_group = @db.execute("select name_id from names_groups where group_id = ?", groups[key[1]]).map { |row| row[0] }
-          old_group.each { |name_id| groups[name_id] = groups[key[0]] }
-          @db.execute("update names_groups set group_id = ? where group_id = ?", [groups[key[0]], groups[key[1]]])
-        end
-      elsif groups.has_key? key[0]
-        groups[key[1]] = groups[key[0]]
-        @db.execute("insert into names_groups (name_id, group_id) values (?, ?)", [key[1], groups[key[0]]])
-      elsif groups.has_key? key[1]
-        groups[key[0]] = groups[key[1]]
-        @db.execute("insert into names_groups (name_id, group_id) values (?, ?)", [key[0], groups[key[1]]])
-      else
-        @db.execute("insert into groups (id) values (?)", last_id)
-        groups[key[0]] = last_id
-        groups[key[0]] = last_id
-        key.each do |id|
-          @db.execute("insert into names_groups (name_id, group_id) values (?, ?)", [id, last_id])
-        end
-      end
-    end
-    require 'ruby-debug'; debugger
-    puts ''
-  end
-
+  
   def build_tree
     tree = {}
     name_parts = {}
-    @input.each do |row|
-      atomized_name = @atomizer.parse row[:name]
+    @input.each_with_index do |row, i|
+      i += 1
+      SynonymFinder.logger_write(self, "Ingesting record %s" % i) if i % 10000 == 0
+      atomized_name = @atomizer.parse row[:name] rescue nil
+      next unless atomized_name && atomized_name[:species]
       species_string = get_species(atomized_name)
       canonical_name = atomized_name[:genus][:string] + " " + species_string
       sp_ary = [canonical_name, species_string]
@@ -109,13 +105,17 @@ class SynonymFinder
         tree[key] ? tree[key] << {id: row[:id], level: level} : tree[key] = [{id: row[:id], level: level}]
       end
     end
-    name_parts.keys.each do |key|
+    name_parts.keys.each_with_index do |key, i|
+      i += 1
+      SynonymFinder.logger_write(self, "Processing parsed_name %s" % i) if i % 10000 == 0
       name_parts[key].each do |name_id|
         vals = key + [stem_epithet(key[-1]), name_id]
         @db.execute("insert into name_parts (canonical, epithet, epithet_stem, name_id) values (?, ?, ?, ?)", vals)
       end
     end
-    tree.keys.each do |key|
+    tree.keys.each_with_index do |key, i|
+      i += 1
+      SynonymFinder.logger_write(self, "Processing path %s" % i) if i % 10000 == 0
       @db.execute("insert into paths (path) values (?)", key.to_s)
       path_id = @db.execute("select last_insert_rowid()")[0][0]
       tree[key].each do |row|
@@ -124,17 +124,35 @@ class SynonymFinder
         @db.execute("insert into paths_names (path_id, name_id, level) values (?, ?, ?)", [path_id, name_id, level])
       end
     end
+    require 'ruby-debug'; debugger
+    puts ''
   end
 
-  def init_db
-    db = SQLite3::Database.new( ":memory:" )
+  def init_db(in_memory)
+    if in_memory == true
+      db = SQLite3::Database.new( ":memory:" )
+      create_tables(db)
+    else
+      db_file = "/tmp/syn_finder.sql"
+      db_exist = File.exist?(db_file)
+      db = SQLite3::Database.new("/tmp/syn_finder.sql")
+      unless db_exist
+        create_tables(db)
+      end
+    end
+    db
+  end
+
+  def create_tables(db)
     db.execute("create table names (id string primary key, name string, authors, years)")
     db.execute("create table paths (id integer primary key autoincrement, path)")
-    db.execute("create table paths_names (path_id integer, name_id string, level integer)")
+    db.execute("create table paths_names (path_id integer, name_id string, level integer, primary key (path_id, name_id))")
     db.execute("create table name_parts (canonical string, epithet string, epithet_stem string, name_id string)")
-    db.execute("create table groups (id integer primary key)")
-    db.execute("create table names_groups (name_id integer, group_id integer)")
-    db
+    db.execute("create index idx_name_parts_1 on name_parts (canonical)")
+    db.execute("create index idx_name_parts_2 on name_parts (epithet_stem)")
+    db.execute("create table groups (id integer primary key, type)")
+    db.execute("create table names_groups (name_id integer, group_id integer, score_max integer, score_sum integer, score_num integer, primary key (name_id, group_id))")
+    db.execute("create index idx_names_groups_2 on names_groups (group_id)")
   end
 
   def get_species(atomized_name)
@@ -145,6 +163,17 @@ class SynonymFinder
 
   def stem_epithet(epithet)
     epithet.split(" ").map { |e| @stemmer.stem(e) }.join(" ")
+  end
+
+  def tmp_populate
+    f = open("/tmp/dump.sql")
+    f.each_with_index do |line, i|
+      i += 1
+      puts "loading from dump line %s" % i if i % 10000 == 0
+      if line.match /INSERT/
+        @db.execute(line.strip)
+      end
+    end
   end
 
 end

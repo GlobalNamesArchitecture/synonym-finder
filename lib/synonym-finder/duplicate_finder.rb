@@ -2,32 +2,39 @@ class SynonymFinder
   class DuplicateFinder
 
     def initialize(synonym_finder)
-      @db = synonym_finder.db
+      @synonym_finder = synonym_finder
+      @db = @synonym_finder.db
     end
 
     def canonical_duplicates
+      SynonymFinder.logger_write(@synonym_finder.object_id, "Processing canonical forms")
       matches = {}
       canonical_name_ids = []
-      @db.execute("select canonical from name_parts group by canonical having count(*) > 1").each do |canonical|
+      @db.execute("select canonical from name_parts group by canonical having count(*) > 1").each_with_index do |canonical, i|
+        i = i + 1
+        SynonymFinder.logger_write(@synonym_finder.object_id, "Processing canonical form candidate %s" % i) if i % 100 == 0
         names = @db.execute("select name_id from name_parts where canonical = ?", canonical).map {|n| n[0]}
         canonical_name_ids += names
         names = names.join(",")
         data = @db.execute("select pn1.name_id, pn2.name_id, pn1.level, pn2.level from paths_names pn1 join paths_names pn2 on pn1.path_id = pn2.path_id where pn1.name_id in (#{names}) and pn2.name_id in (#{names}) and pn1.name_id != pn2.name_id")
         organize_data(data, matches)
-        matches.each do |key, value|
-          if value[:total_distance] == 0
-            value[:type] = :chresonym
-          else
-            value[:type] = :alt_placement
-          end
+      end
+      matches.each do |key, value|
+        if value[:total_distance] == 0
+          value[:type] = :chresonym
+        else
+          value[:type] = :alt_placement
         end
       end
       matches
     end
 
     def species_epithet_duplicates(threshold_distance)
+      SynonymFinder.logger_write(@synonym_finder.object_id, "Processing species epithets")
       matches = {}
-      @db.execute("select epithet_stem from name_parts group by epithet_stem having count(*) > 1").each do |stem|
+      @db.execute("select epithet_stem from name_parts group by epithet_stem having count(*) > 1").each_with_index do |stem, i|
+        i = i + 1
+        SynonymFinder.logger_write(@synonym_finder.object_id, "Processing species epithet candidate %s" % i) if i % 100 == 0
         names = @db.execute("select name_id from name_parts where epithet_stem = ?", stem).map {|n| n[0]}.join(",")
         data = @db.execute("select pn1.name_id, pn2.name_id, pn1.level, pn2.level from paths_names pn1 join paths_names pn2 on pn1.path_id = pn2.path_id where pn1.name_id in (#{names}) and pn2.name_id in (#{names}) and pn1.name_id != pn2.name_id") # and (pn1.level + pn2.level) < ?", threshold_distance)
         organize_data(data, matches) 
