@@ -37,7 +37,7 @@ class SynonymFinder
     @tm = Taxamatch::Base.new
     @stemmer = Lingua::Stemmer.new(:language => "latin")
     @db = init_db(in_memory)
-    tmp_populate
+    #tmp_populate
     build_tree unless @db.execute("select count(*) from names")[0][0].to_i > 0
     @matches = {}
     @duplicate_finder = DuplicateFinder.new(self)
@@ -65,11 +65,11 @@ class SynonymFinder
   end
 
   def compare_authorship(matches)
-    SynonymFinder.logger(self.object_id, "Matching authorship")
+    SynonymFinder.logger_write(self.object_id, "Matching authorship")
     count = 0
     matches.each do |key, value|
       count += 1
-      SynonymFinder.logger(self.object_id, "Matching authors %s" % count) if count % 1000 == 0
+      SynonymFinder.logger_write(self.object_id, "Matching authors %s" % count) if count % 1000 == 0
       ids = key.join(",")
       res = @db.execute("select authors, years from names where id in (#{ids})")
       data1 = {:all_authors => Marshal.load(res[0][0]), :all_years =>Marshal.load(res[0][1])}

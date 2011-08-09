@@ -14,7 +14,7 @@ class SynonymFinder
       count = 0
       @synonym_finder.matches.each do |key, value|
         count += 1
-        SynonymFinder.logger_write(@synonym_finder.object_id, "Grouping match %s" % count) if count % 10000 == 0
+        SynonymFinder.logger_write(@synonym_finder.object_id, "Grouping match %s" % count) if count % 100 == 0
         gr1 = get_group(key[0], value[:type])
         gr2 = get_group(key[1], value[:type])
         if gr1 && gr2 
