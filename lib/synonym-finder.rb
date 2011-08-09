@@ -37,7 +37,7 @@ class SynonymFinder
     @tm = Taxamatch::Base.new
     @stemmer = Lingua::Stemmer.new(:language => "latin")
     @db = init_db(in_memory)
-    #tmp_populate
+    tmp_populate
     build_tree unless @db.execute("select count(*) from names")[0][0].to_i > 0
     @matches = {}
     @duplicate_finder = DuplicateFinder.new(self)

@@ -2,8 +2,8 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
 describe "SynonymFinder" do
   before(:all) do
-    @sf = SynonymFinder.new(SynonymFinder::Spec::Config.input)
-    #@sf = SynonymFinder.new(open(File.dirname(__FILE__) + "/support/union_data.txt").read)
+    #@sf = SynonymFinder.new(SynonymFinder::Spec::Config.input)
+    @sf = SynonymFinder.new(open(File.dirname(__FILE__) + "/support/union_data.txt").read)
     SynonymFinder.logger = Logger.new($stdout)
   end
 
