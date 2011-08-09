@@ -37,7 +37,7 @@ class SynonymFinder
     @tm = Taxamatch::Base.new
     @stemmer = Lingua::Stemmer.new(:language => "latin")
     @db = init_db(in_memory)
-    # tmp_populate
+    tmp_populate
     build_tree unless @db.execute("select count(*) from names")[0][0].to_i > 0
     @matches = {}
     @duplicate_finder = DuplicateFinder.new(self)
@@ -65,7 +65,11 @@ class SynonymFinder
   end
 
   def compare_authorship(matches)
+    SynonymFinder.logger(self.object_id, "Matching authorship")
+    count = 0
     matches.each do |key, value|
+      count += 1
+      SynonymFinder.logger(self.object_id, "Matching authors %s" % count) if count % 1000 == 0
       ids = key.join(",")
       res = @db.execute("select authors, years from names where id in (#{ids})")
       data1 = {:all_authors => Marshal.load(res[0][0]), :all_years =>Marshal.load(res[0][1])}
@@ -149,6 +153,7 @@ class SynonymFinder
     db.execute("create table name_parts (canonical string, epithet string, epithet_stem string, name_id string)")
     db.execute("create index idx_name_parts_1 on name_parts (canonical)")
     db.execute("create index idx_name_parts_2 on name_parts (epithet_stem)")
+    db.execute("create index idx_name_parts_3 on name_parts (name_id)")
     db.execute("create table groups (id integer primary key, type)")
     db.execute("create table names_groups (name_id integer, group_id integer, score_max integer, score_sum integer, score_num integer, primary key (name_id, group_id))")
     db.execute("create index idx_names_groups_2 on names_groups (group_id)")
