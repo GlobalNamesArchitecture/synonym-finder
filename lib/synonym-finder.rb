@@ -31,23 +31,24 @@ class SynonymFinder
   end
 
   
-  def initialize(input, in_memory = true)
+  def initialize(input, in_memory = false)
     @input = JSON.parse(input, :symbolize_names => true)
     @atomizer = Taxamatch::Atomizer.new
     @tm = Taxamatch::Base.new
     @stemmer = Lingua::Stemmer.new(:language => "latin")
     @db = init_db(in_memory)
-    tmp_populate
+    #tmp_populate
     build_tree unless @db.execute("select count(*) from names")[0][0].to_i > 0
     @matches = {}
     @duplicate_finder = DuplicateFinder.new(self)
     @group_organizer = GroupOrganizer.new(self)
+    require 'ruby-debug'; debugger
+    puts ''
   end
 
   def find_matches(threshold = 5)
-    canonical_matches = @duplicate_finder.canonical_duplicates
-    epithet_matches = @duplicate_finder.species_epithet_duplicates(threshold)
-    matches = epithet_matches.merge(canonical_matches)
+    @duplicate_finder.canonical_duplicates
+    matches = @duplicate_finder.species_epithet_duplicates(threshold)
     matches = compare_authorship(matches)
     @matches = clean_up(matches)
     @group_organizer.organize
@@ -85,49 +86,17 @@ class SynonymFinder
     matches
   end
 
-  
   def build_tree
-    tree = {}
-    name_parts = {}
+    SynonymFinder.logger_write(self.object_id, "Ingesting data")
     @input.each_with_index do |row, i|
       i += 1
-      SynonymFinder.logger_write(self, "Ingesting record %s" % i) if i % 10000 == 0
+      SynonymFinder.logger_write(self.object_id, "Ingesting record %s" % i) if i % 1000 == 0
       atomized_name = @atomizer.parse row[:name] rescue nil
       next unless atomized_name && atomized_name[:species]
       species_string = get_species(atomized_name)
       canonical_name = atomized_name[:genus][:string] + " " + species_string
-      sp_ary = [canonical_name, species_string]
-      name_parts[sp_ary] ? name_parts[sp_ary] << row[:id] : name_parts[sp_ary] = [row[:id]]
       @db.execute("insert into names (id, name, authors, years) values (?, ?, ?, ?)", [row[:id], row[:name], Marshal.dump(atomized_name[:all_authors]), Marshal.dump(atomized_name[:all_years])])
-      path = row[:path].split("|")
-      path_part = path[0]
-      level = path.size - 1
-      path[1..-1].each do |taxa|
-        level -= 1
-        path_part << "|"
-        path_part << taxa
-        key = path_part.to_sym
-        tree[key] ? tree[key] << {id: row[:id], level: level} : tree[key] = [{id: row[:id], level: level}]
-      end
-    end
-    name_parts.keys.each_with_index do |key, i|
-      i += 1
-      SynonymFinder.logger_write(self, "Processing parsed_name %s" % i) if i % 10000 == 0
-      name_parts[key].each do |name_id|
-        vals = key + [stem_epithet(key[-1]), name_id]
-        @db.execute("insert into name_parts (canonical, epithet, epithet_stem, name_id) values (?, ?, ?, ?)", vals)
-      end
-    end
-    tree.keys.each_with_index do |key, i|
-      i += 1
-      SynonymFinder.logger_write(self, "Processing path %s" % i) if i % 10000 == 0
-      @db.execute("insert into paths (path) values (?)", key.to_s)
-      path_id = @db.execute("select last_insert_rowid()")[0][0]
-      tree[key].each do |row|
-        name_id = row[:id]
-        level = row[:level]
-        @db.execute("insert into paths_names (path_id, name_id, level) values (?, ?, ?)", [path_id, name_id, level])
-      end
+      @db.execute("insert into name_parts (name_id, path, canonical, epithet, epithet_stem) values (?, ?, ?, ?, ?)", [row[:id], row[:path], canonical_name, species_string, stem_epithet(species_string)])
     end
   end
 
@@ -148,12 +117,11 @@ class SynonymFinder
 
   def create_tables(db)
     db.execute("create table names (id string primary key, name string, authors, years)")
-    db.execute("create table paths (id integer primary key autoincrement, path)")
-    db.execute("create table paths_names (path_id integer, name_id string, level integer, primary key (path_id, name_id))")
-    db.execute("create table name_parts (canonical string, epithet string, epithet_stem string, name_id string)")
+    # db.execute("create table paths (id integer primary key autoincrement, path)")
+    # db.execute("create table paths_names (path_id integer, name_id string, level integer, primary key (path_id, name_id))")
+    db.execute("create table name_parts (name_id string, path string, canonical string, epithet string, epithet_stem string)")
     db.execute("create index idx_name_parts_1 on name_parts (canonical)")
     db.execute("create index idx_name_parts_2 on name_parts (epithet_stem)")
-    db.execute("create index idx_name_parts_3 on name_parts (name_id)")
     db.execute("create table groups (id integer primary key, type)")
     db.execute("create table names_groups (name_id integer, group_id integer, score_max integer, score_sum integer, score_num integer, primary key (name_id, group_id))")
     db.execute("create index idx_names_groups_2 on names_groups (group_id)")
