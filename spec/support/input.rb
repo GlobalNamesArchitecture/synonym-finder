@@ -24,6 +24,9 @@ class SynonymFinder::Spec
     {id: 600, path: "Animalia|Athropoda|Insecta|Hymenoptera|Tiphiidae|Crematogaster",    name: "Crematogaster obscurata  Em. 1895"}, #full name match
     {id: 700, path: "Animalia|Something1|Something2|Something3|Something4|Somename",     name: "Somename obscurata Emery"}, #distance over threshold
     {id: 800, path: "Animalia|Athropoda|Insecta|Hymenoptera|Tiphiidae|Neobrachymyrmex",  name: "Neobrachymyrmex obscurata  (Emery, 1895)"}, #match 2 degrees 400 auth
+    {id: 801, path: "Animalia|Athropoda|Insecta|Hymenoptera|Tiphiidae|Neobrachymyrmex",  name: "Brachymyrmex obscuratum  (Emery, 1895)"}, #misplaced synonym by stem 800
+    {id: 802, path: "Animalia|Athropoda|Insecta|Hymenoptera|Tiphiidae|Neobrachymyrmex",  name: "Brachymyrmex obscurata  (Emery, 1895)"}, #misplaced synonym by epithet 800
+    {id: 803, path: "Animalia|Athropoda|Insecta|Hymenoptera|Tiphiidae|Neobrachymyrmex",  name: "Neobrachymyrmex obscuratum  (Emery, 1895)"}, #lex var by epithet 800
   ]
 
 end

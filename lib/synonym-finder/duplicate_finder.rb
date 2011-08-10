@@ -63,14 +63,19 @@ class SynonymFinder
         names = @db.execute("select name_id, path from name_parts where epithet_stem = ?", stem)
         find_pairs(names, threshold_distance)
       end
+      count = 0
+      SynonymFinder.logger_write(@synonym_finder.object_id, "Assigning type to found matches")
       @matches.each do |key, value|
         next if value.has_key?(:type)
+        count += 1
+        SynonymFinder.logger_write(@synonym_finder.object_id, "Processing match %s" % count) if count % 10000 == 0
         if value[:total_distance] == 0
           epithets = @db.execute("select distinct epithet from name_parts where name_id in (#{key.join(",")})")
           if epithets.size == 1
-            value[:type] = :chresonym
+            value[:type] = :misplaced_synonym
           else
-            value[:type] = :lexical_variant
+            genera = @db.execute("select canonical from name_parts where name_id in (#{key.join(",")})").map { |c| c[0].split(" ")[0] }.uniq
+            value[:type] = genera.size == 1 ? :lexical_variant : :misplaced_synonym
           end
         else
           value[:type] = :homotypic

@@ -12,7 +12,7 @@ class SynonymFinder
   AUTH_MATCH = 100
   AUTH_NO_MATCH = 0
 
-  attr :input, :db, :matches
+  attr :input, :db, :matches, :part_matches
   
   def self.logger
     @@logger ||= Logger.new(nil)
@@ -31,7 +31,7 @@ class SynonymFinder
   end
 
   
-  def initialize(input, in_memory = false)
+  def initialize(input, in_memory = true)
     @input = JSON.parse(input, :symbolize_names => true)
     @atomizer = Taxamatch::Atomizer.new
     @tm = Taxamatch::Base.new
@@ -40,6 +40,7 @@ class SynonymFinder
     #tmp_populate
     build_tree unless @db.execute("select count(*) from names")[0][0].to_i > 0
     @matches = {}
+    @part_matches = {}
     @duplicate_finder = DuplicateFinder.new(self)
     @group_organizer = GroupOrganizer.new(self)
     require 'ruby-debug'; debugger
@@ -50,19 +51,17 @@ class SynonymFinder
     @duplicate_finder.canonical_duplicates
     matches = @duplicate_finder.species_epithet_duplicates(threshold)
     matches = compare_authorship(matches)
-    @matches = clean_up(matches)
+    clean_up(matches)
     @group_organizer.organize
   end
 
   private
 
   def clean_up(matches)
-    res = {}
     matches.each do |key, value|
-      next if value[:type] != :chresonym && value[:auth_match] == 0
-      res[key] = value
+      next if value[:type] != :chresonym && value[:auth_match] < 20
+      value[:auth_match] == 100 ? @matches[key] = value : @part_matches[key] = value
     end
-    res
   end
 
   def compare_authorship(matches)
