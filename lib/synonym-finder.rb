@@ -13,7 +13,7 @@ class SynonymFinder
   AUTH_NO_MATCH = 0
 
   attr :input, :db, :matches, :part_matches
-  
+
   def self.logger
     @@logger ||= Logger.new(nil)
   end
@@ -30,7 +30,7 @@ class SynonymFinder
     self.logger.send(method, "|%s|%s|" % [obj_id, message])
   end
 
-  
+
   def initialize(input, in_memory = true)
     @input = JSON.parse(input, :symbolize_names => true)
     @atomizer = Taxamatch::Atomizer.new
@@ -60,7 +60,7 @@ class SynonymFinder
   def clean_up(matches)
     matches.each do |key, value|
       next if value[:type] != :chresonym && value[:auth_match] < 20
-      value[:auth_match] == 100 ? @matches[key] = value : @part_matches[key] = value
+      value[:auth_match] == 100 || value[:type] == :chresonym ? @matches[key] = value : @part_matches[key] = value
     end
   end
 

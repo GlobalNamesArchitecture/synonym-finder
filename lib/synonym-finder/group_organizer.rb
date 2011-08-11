@@ -10,6 +10,13 @@ class SynonymFinder
     # Finds duplication groups for a name. A name can be one or more duplication groups: chresonym, lexical variant, homotypic, alt placement
     def organize
       SynonymFinder.logger_write(@synonym_finder.object_id, "Grouping results")
+      organize_matches
+      organize_partial_matches
+    end
+
+    private
+
+    def organize_matches
       @last_id = 1
       count = 0
       @synonym_finder.matches.each do |key, value|
@@ -17,7 +24,7 @@ class SynonymFinder
         SynonymFinder.logger_write(@synonym_finder.object_id, "Grouping match %s" % count) if count % 10000 == 0
         gr1 = get_group(key[0], value[:type])
         gr2 = get_group(key[1], value[:type])
-        if gr1 && gr2 
+        if gr1 && gr2
           update_group(gr1, gr2) if gr1 != gr2
           key.each { |name_id| update_score(name_id, value) }
         elsif !gr1 && !gr2
@@ -28,7 +35,27 @@ class SynonymFinder
       end
     end
 
-    private
+    def organize_partial_matches
+      added = {}
+      count = 0
+      @synonym_finder.part_matches.each do |key, value|
+        count += 1
+        SynonymFinder.logger_write(@synonym_finder.object_id, "Adding partial matches %s" % count) if count % 10000 == 0
+        gr1 = get_group(key[0], value[:type])
+        gr2 = get_group(key[1], value[:type])
+        require 'ruby-debug'; debugger
+        if  gr1 || gr2
+          group_id, name_id, name_id_db = gr1 ? [gr1, key[1], key[0]] : [gr2, key[0], key[1]] #name without authorship
+          unless added[name_id] && added[name_id][name_id_db]
+            score = get_score(value)
+            @db.execute("insert into names_groups (name_id, group_id, score_max, score_sum, score_num) values (?, ?, ?, ?, 1)", [name_id, group_id, score, score])
+            added[name_id] = { name_id_db => 1 }
+          end
+        else
+          create_group(key, value)
+        end
+      end
+    end
 
     def get_group(name_id, type)
       return nil unless @groups[name_id]
@@ -42,7 +69,7 @@ class SynonymFinder
       @groups[key[0]][value[:type]] = @groups[key[1]][value[:type]] = @last_id
       @db.execute("insert into names_groups (name_id, group_id, score_max, score_sum, score_num) values (?, ?, ?, ?, 1)", [key[0], @last_id, score, score])
       @db.execute("insert into names_groups (name_id, group_id, score_max, score_sum, score_num) values (?, ?, ?, ?, 1)", [key[1], @last_id, score, score])
-      @last_id += 1 
+      @last_id += 1
     end
 
     def update_group(gr1, gr2)
@@ -72,6 +99,6 @@ class SynonymFinder
       return 10  if value[:alt_placement] && value[:total_length] > 8
       score = value[:auth_match]
     end
-    
+
   end
 end
