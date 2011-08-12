@@ -1,6 +1,6 @@
 = synonym-finder
 
-Synonym finder is a biodiversity tool for finding homotypic nomenclatural synonyms in taxonomic hierarchies.
+Synonym finder is a biodiversity tool for finding homotypic nomenclatural synonyms in taxonomic hierarchies.`
 
 == Installation
 
@@ -8,9 +8,45 @@ Synonym finder is a biodiversity tool for finding homotypic nomenclatural synony
 
 == Usage
 
-First you have to prepare intput for the gem. It understand following array of hashes as input:
+   #prepare intput for the gem. It understand following array of hashes as input:
 
-input = {:id => 'one', :path => }
+   input = [
+     {id: 001, path: "Animalia|Athropoda|Insecta|Hymenoptera|Formicidae|Gnamptogenys",    name: "Gnamptogenys porcata (Emery, 1896)"},
+     {id: 003, path: "Animalia|Athropoda|Insecta|Hymenoptera|Formicidae|Gnamptogenys",    name: "Gnamptogenys triangularis (Mayr, 1887)"},
+     {id: 004, path: "Animalia|Athropoda|Insecta|Hymenoptera|Formicidae|Gnamptogenys",    name: "Gnamptogenys triangularis var. alba Brown 1992"},
+     {id: 005, path: "Animalia|Athropoda|Insecta|Hymenoptera|Formicidae|Gnamptogenys",    name: "Gnamptogenys triangularis var. borealis Brown 1992"},
+     {id: 100, path: "Animalia|Athropoda|Insecta|Hymenoptera|Formicidae|Nylanderia",      name: "Nylanderia porcata"}, #match 001, no authorhsip
+     {id: 101, path: "Animalia|Athropoda|Insecta|Hymenoptera|Formicidae|Nylanderia",      name: "Nylanderia porcatum Emery, 1896"},
+     {id: 102, path: "Animalia|Athropoda|Insecta|Hymenoptera|Formicidae|Nylanderia",      name: "Nylanderia porcatum"}...]
+
+    # please note that id can be a number of a string
+
+    requre 'synonym-finder'
+
+    sf = SynonymFinder.new(input)
+    output = sf.find_synonyms
+
+    # output should be of a following format:
+    # matched putative synonyms are collected into groups of different types
+    #
+    # [ {:type=>"chresonym", :name_ids=>[203, 204]},
+    #   {:type=>"alt_placement", :name_ids=>[400, 600]},
+    #   {:type=>"chresonym", :name_ids=>[101, 102]},
+    #   {:type=>"homotypic", :name_ids=>[203, 303]},
+    #   {:type=>"lexical_variant", :name_ids=>[800, 803]},
+    #   {:type=>"lexical_variant", :name_ids=>[801, 802]},
+    #   {:type=>"homotypic", :name_ids=>[202, 302]},
+    #   {:type=>"homotypic", :name_ids=>[1, 101]},
+    #   {:type=>"misplaced_synonym", :name_ids=>[801, 803, 802, 800]}]
+
+== Synonym types
+
+* homotypic -- possible placement of species to a different genus
+* alt_placement -- possibly the same name (i.e. genus moved to a different family
+* chresonym -- different authorship with for the same canonical form, both having the same parent
+* lexical_variant -- The same parent and genus, but species epithet suffix is different (for example change of the epithet gender)
+* misplaced_synonym -- The same parent, matching species epithet, but genus varies, usually happens if a synonyn located at the same level as species.
+
 == Contributing to synonym-finder
 
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet
