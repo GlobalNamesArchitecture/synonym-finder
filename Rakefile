@@ -17,8 +17,8 @@ Jeweler::Tasks.new do |gem|
   gem.name = "synonym-finder"
   gem.homepage = "http://github.com/dimus/synonym-finder"
   gem.license = "MIT"
-  gem.summary = %Q{TODO: one-line summary of your gem}
-  gem.description = %Q{TODO: longer description of your gem}
+  gem.summary = %Q{Synonym finder is a biodiversity tool for finding homotypic nomenclatural synonyms in taxonomic hierarchies.}
+  gem.description = %Q{Synonym finder is a biodiversity tool for finding homotypic nomenclatural synonyms in taxonomic hierarchies.}
   gem.email = "dmozzherin@gmail.com"
   gem.authors = ["Dmitry Mozzherin"]
   # dependencies defined in Gemfile
