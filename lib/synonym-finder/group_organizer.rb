@@ -11,7 +11,8 @@ class SynonymFinder
     def organize
       SynonymFinder.logger_write(@synonym_finder.object_id, "Grouping results")
       organize_matches
-      organize_partial_matches
+      #organize_partial_matches
+      get_output
     end
 
     private
@@ -43,7 +44,6 @@ class SynonymFinder
         SynonymFinder.logger_write(@synonym_finder.object_id, "Adding partial matches %s" % count) if count % 10000 == 0
         gr1 = get_group(key[0], value[:type])
         gr2 = get_group(key[1], value[:type])
-        require 'ruby-debug'; debugger
         if  gr1 || gr2
           group_id, name_id, name_id_db = gr1 ? [gr1, key[1], key[0]] : [gr2, key[0], key[1]] #name without authorship
           unless added[name_id] && added[name_id][name_id_db]
@@ -98,6 +98,23 @@ class SynonymFinder
       return 100 if value[:type] == :chresonym
       return 10  if value[:alt_placement] && value[:total_length] > 8
       score = value[:auth_match]
+    end
+
+    def get_output
+      data = @db.execute("select x.group_id, g.type, ng.name_id from (select group_id from names_groups group by group_id order by count(*), group_id) x join names_groups ng on x.group_id = ng.group_id join names n on n.id = ng.name_id join groups g on g.id = ng.group_id")
+      group = 0
+      res = []
+      current_group = nil
+      data.each do |group_id, type, name_id|
+        if group_id != group
+          res << current_group if current_group
+          group = group_id
+          current_group = { :type => type, :name_ids => [name_id] }
+        else
+          current_group[:name_ids] << name_id
+        end
+      end
+      res
     end
 
   end

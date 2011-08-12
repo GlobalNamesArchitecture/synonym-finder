@@ -9,11 +9,11 @@ require 'synonym-finder'
 Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each {|f| require f}
 
 RSpec.configure do |config|
-  
+
 end
 
 class SynonymFinder::Spec
   Config = OpenStruct.new(
-    :input => INPUT.to_json
+    :input => INPUT
   )
 end

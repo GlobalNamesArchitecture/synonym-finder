@@ -32,7 +32,7 @@ class SynonymFinder
 
 
   def initialize(input, in_memory = true)
-    @input = JSON.parse(input, :symbolize_names => true)
+    @input = input
     @atomizer = Taxamatch::Atomizer.new
     @tm = Taxamatch::Base.new
     @stemmer = Lingua::Stemmer.new(:language => "latin")
@@ -43,8 +43,6 @@ class SynonymFinder
     @part_matches = {}
     @duplicate_finder = DuplicateFinder.new(self)
     @group_organizer = GroupOrganizer.new(self)
-    require 'ruby-debug'; debugger
-    puts ''
   end
 
   def find_matches(threshold = 5)
