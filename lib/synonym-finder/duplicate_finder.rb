@@ -15,32 +15,34 @@ class SynonymFinder
         names = @db.execute("select name_id, path from name_parts where canonical = ?", canonical)
         find_pairs(names)
       end
-      require 'ruby-debug'; debugger
-      puts ''
-    end
-
-    def species_epithet_duplicates
-      res = {}
-      @db.execute("select distinct epithets from name_parts").each do |row|
-        names = @db.execute("select name_id from species_strings_names where species_string_id = ?", row[0]).map {|n| n[0]}.join(",")
-        data = @db.execute("select pn1.name_id, pn2.name_id, pn1.level, pn2.level from paths_names pn1 join paths_names pn2 on pn1.path_id = pn2.path_id where pn1.name_id in (#{names}) and pn2.name_id in (#{names}) and pn1.name_id != pn2.name_id")
-        data = organize_data(data, res)
+      @matches.each do |key, value|
+        if value[:total_distance] == 0
+          value[:type] = :chresonym
+        else
+          value[:type] = :alt_placement
+        end
       end
       @matches
     end
 
-    private
-
-    def organize_data(data, res)
-      data.each do |datum|
-        ids = datum[0..1].sort
-        distances = (ids == datum[0..1]) ? datum[-2..-1] : datum[-2..-1].reverse
-        total_distance = datum[-2] + datum[-1]
-        if !res[ids] || res[ids][:total_distance] > total_distance
-          res[ids] = { :distances => distances, :total_distance => total_distance }
-        end
+    def find_pairs(names, threshold = 0)
+      pairs = get_pairs(names)
+      pairs.each do |pair|
+        key = [pair[0][0], pair[1][0]]
+        total_distance = get_total_distance(pair[0][1], pair[1][1])
+        value = {:total_distance => total_distance}
+        @matches[key] = value if !@matches.has_key?(key) && (threshold == 0 || total_distance <= threshold)
       end
-      res
+    end
+      
+    def get_total_distance(path1, path2)
+      total_distance = path1.size + path2.size
+      count = 0
+      path1.zip(path2).each do |pair|
+        break if pair[0] != pair[1]
+        count += 1
+      end
+      total_distance - count * 2
     end
 
     def get_pairs(names)
