@@ -5,12 +5,12 @@
 
 Gem::Specification.new do |s|
   s.name = %q{synonym-finder}
-  s.version = "0.2.1"
+  s.version = "0.2.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = [%q{Dmitry Mozzherin}]
   s.date = %q{2011-08-12}
-  s.description = %q{TODO: longer description of your gem}
+  s.description = %q{Synonym finder is a biodiversity tool for finding homotypic nomenclatural synonyms in taxonomic hierarchies.}
   s.email = %q{dmozzherin@gmail.com}
   s.extra_rdoc_files = [
     "LICENSE.txt",
@@ -34,13 +34,14 @@ Gem::Specification.new do |s|
     "lib/synonym-finder/group_organizer.rb",
     "spec/spec_helper.rb",
     "spec/support/input.rb",
-    "spec/synonym-finder_spec.rb"
+    "spec/synonym-finder_spec.rb",
+    "synonym-finder.gemspec"
   ]
   s.homepage = %q{http://github.com/dimus/synonym-finder}
   s.licenses = [%q{MIT}]
   s.require_paths = [%q{lib}]
   s.rubygems_version = %q{1.8.6}
-  s.summary = %q{TODO: one-line summary of your gem}
+  s.summary = %q{Synonym finder is a biodiversity tool for finding homotypic nomenclatural synonyms in taxonomic hierarchies.}
 
   if s.respond_to? :specification_version then
     s.specification_version = 3
