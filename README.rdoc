@@ -2,12 +2,17 @@
 
 Synonym finder is a biodiversity tool for finding homotypic nomenclatural synonyms in taxonomic hierarchies.
 
-= Status
+== Installation
 
-Early development
+    gem install synonym-finder
 
+== Usage
+
+First you have to prepare intput for the gem. It understand following array of hashes as input:
+
+input = {:id => 'one', :path => }
 == Contributing to synonym-finder
- 
+
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet
 * Check out the issue tracker to make sure someone already hasn't requested it and/or contributed it
 * Fork the project
