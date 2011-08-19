@@ -4,11 +4,13 @@ Synonym finder is a biodiversity tool for finding homotypic nomenclatural synony
 
 == Installation
 
+Please note that this gem is not tested or inteded to be used with ruby versions 1.8.x or less
+
     gem install synonym-finder
 
 == Usage
 
-   #prepare intput for the gem. It understand following array of hashes as input:
+   #prepare intput for the gem. The gem takes an array of hashes as input:
 
    input = [
      {id: 001, path: "Animalia|Athropoda|Insecta|Hymenoptera|Formicidae|Gnamptogenys",    name: "Gnamptogenys porcata (Emery, 1896)"},
@@ -19,14 +21,14 @@ Synonym finder is a biodiversity tool for finding homotypic nomenclatural synony
      {id: 101, path: "Animalia|Athropoda|Insecta|Hymenoptera|Formicidae|Nylanderia",      name: "Nylanderia porcatum Emery, 1896"},
      {id: 102, path: "Animalia|Athropoda|Insecta|Hymenoptera|Formicidae|Nylanderia",      name: "Nylanderia porcatum"}...]
 
-    # please note that id can be a number of a string
+    # please note that id can be a number or a string
 
     requre 'synonym-finder'
 
     sf = SynonymFinder.new(input)
     output = sf.find_synonyms
 
-    # output should be of a following format:
+    # output has a following format --
     # matched putative synonyms are collected into groups of different types
     #
     # [ {:type=>"chresonym", :name_ids=>[203, 204]},
@@ -39,11 +41,11 @@ Synonym finder is a biodiversity tool for finding homotypic nomenclatural synony
     #   {:type=>"homotypic", :name_ids=>[1, 101]},
     #   {:type=>"misplaced_synonym", :name_ids=>[801, 803, 802, 800]}]
 
-    # you can also see 'atomical' matches of one record with another:
+    # you can also see 'atomical' matches of one name with another:
 
     matches = sf.matches
 
-    # matches should be in the following format:
+    # matches have a following format:
     # {[203, 204]=>{:total_distance=>0, :type=>:chresonym, :auth_match=>0},
     # [400, 600]=>{:total_distance=>4, :type=>:alt_placement, :auth_match=>100},
     # [101, 102]=>{:total_distance=>0, :type=>:chresonym, :auth_match=>20},
@@ -59,6 +61,7 @@ Synonym finder is a biodiversity tool for finding homotypic nomenclatural synony
     # [600, 802]=>{:total_distance=>2, :type=>:homotypic, :auth_match=>100},
     # ...}
 
+    # the hash keys are 2 element arrays where elements are name ids.
     # total distance - is how far two putative synonyms are from each other on the tree 
     # type - is the same as for the grouped output 
     # auth_match - shows if authorship matched between two names: 
