@@ -39,6 +39,33 @@ Synonym finder is a biodiversity tool for finding homotypic nomenclatural synony
     #   {:type=>"homotypic", :name_ids=>[1, 101]},
     #   {:type=>"misplaced_synonym", :name_ids=>[801, 803, 802, 800]}]
 
+    # you can also see 'atomical' matches of one record with another:
+
+    matches = sf.matches
+
+    # matches should be in the following format:
+    # {[203, 204]=>{:total_distance=>0, :type=>:chresonym, :auth_match=>0},
+    # [400, 600]=>{:total_distance=>4, :type=>:alt_placement, :auth_match=>100},
+    # [101, 102]=>{:total_distance=>0, :type=>:chresonym, :auth_match=>20},
+    # [203, 303]=>{:total_distance=>2, :type=>:homotypic, :auth_match=>100},
+    # [400, 803]=>{:total_distance=>4, :type=>:homotypic, :auth_match=>100},
+    # [500, 803]=>{:total_distance=>2, :type=>:homotypic, :auth_match=>100},
+    # [600, 803]=>{:total_distance=>2, :type=>:homotypic, :auth_match=>100},
+    # [800, 803]=>{:total_distance=>0, :type=>:lexical_variant, :auth_match=>100},
+    # [801, 803]=>{:total_distance=>0, :type=>:misplaced_synonym, :auth_match=>100},
+    # [802, 803]=>{:total_distance=>0, :type=>:misplaced_synonym, :auth_match=>100},
+    # [400, 802]=>{:total_distance=>4, :type=>:homotypic, :auth_match=>100},
+    # [500, 802]=>{:total_distance=>2, :type=>:homotypic, :auth_match=>100},
+    # [600, 802]=>{:total_distance=>2, :type=>:homotypic, :auth_match=>100},
+    # ...}
+
+    # total distance - is how far two putative synonyms are from each other on the tree 
+    # type - is the same as for the grouped output 
+    # auth_match - shows if authorship matched between two names: 
+    #     0   - authorships did not match, 
+    #     20  - one of the names has no authorship data, 
+    #     100 - authorship matched.
+
 == Synonym types
 
 * homotypic -- possible placement of species to a different genus
